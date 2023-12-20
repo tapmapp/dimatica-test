@@ -265,6 +265,8 @@ export class AppUserForm implements OnInit {
 
 ![image](uploads/0388377207d10f8732e1d64623a255b6/image.png)
 
+In the zip file.
+
 # MongoDb
 
 ## Exercice: MongoDb request _(3 points)_
