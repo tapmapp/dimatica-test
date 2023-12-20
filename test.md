@@ -136,6 +136,19 @@ export class AppUsers {
 }
 
 
+  ngOnInit(): void {
+    concat(of(this.query), this.querySubject.asObservable())
+      .pipe(
+        concatMap((q) =>
+          timer(0, 60000).pipe(concatMap(async () => await this.findUsers(q)))
+        )
+      )
+      .subscribe({
+        next: (res) => (this.users = res),
+      });
+  }
+
+
 Pipe expects an OperatorFunction, not a service, you need to wrap it into a method that returns an OperatorFunction to make it work.
 Also, if you are planning to make a request you need to use async await
 Not sure what you are trying to do, but the logic seems quite complex for a input and if what you are trying to do is to query an API when the input change, I would do something like the code above.
@@ -216,6 +229,7 @@ export class AppUserForm implements OnInit {
       name: ["", [Validators.required, Validators.max(128)]],
       birthday: ["", [dateValidator()]],
       zip: ["", [Validators.required]],
+      // not sure about this regular expression, I would have to test it several times to make sure it behaves as you want
       city: ["", [Validators.required, Validators.pattern("[a-zA-Z ]*")]],
     });
   }
@@ -270,6 +284,7 @@ MongoDb collection `users` with schema
 Complete the query, you have a variable that contains a piece of text to search for. Search by exact email, starts with first or last name and only users logged in for 6 months
 
 ```typescript
+
 function search(searchString: string) {
   return db.collections("users").find({
     email: searchString,
@@ -281,6 +296,8 @@ function search(searchString: string) {
   });
 }
 ```
+
+Is a complex query and i would have to test it several times, but i am sure it looks very similar to the code above.
 
 What should be added to the collection so that the query is not slow?
 
