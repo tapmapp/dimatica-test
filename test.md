@@ -49,22 +49,31 @@ Missing async and await
 Write unit tests in jest for the function below in typescript
 
 ```typescript
-import { expect, test } from '@jest/globals';
+import { expect, test } from "@jest/globals";
 
 function getCapitalizeFirstWord(name: string): string {
   if (name == null) {
-    throw new Error('Failed to capitalize first word with null');
+    throw new Error("Failed to capitalize first word with null");
   }
   if (!name) {
     return name;
   }
-  return name.split(' ').map(
-    n => n.length > 1 ? (n.substring(0, 1).toUpperCase() + n.substring(1).toLowerCase()) : n
-  ).join(' ');
+  return name
+    .split(" ")
+    .map((n) =>
+      n.length > 1
+        ? n.substring(0, 1).toUpperCase() + n.substring(1).toLowerCase()
+        : n
+    )
+    .join(" ");
 }
 
-test('1. test', async function () {
-    ...
+test("1. test", async function () {
+  expect(getCapitalizeFirstWord("francisco roca")).toBe("Francisco Roca");
+  expect(getCapitalizeFirstWord(null)).toThrow(
+    "Failed to capitalize first word with null"
+  );
+  expect(getCapitalizeFirstWord("")).toBe("");
 });
 ```
 
@@ -125,7 +134,7 @@ export class AppUsers implements OnInit {
 }
 
 
-Pipe expects an OperatorFunction, not a service, you need to wrap it into a concatMap to make it work.
+Pipe expects an OperatorFunction, not a service, you need to wrap it into a method that returns an OperatorFunction to make it work.
 Also, if you are planning to make a request you need to use async await
 
 ```
@@ -192,27 +201,38 @@ export class AppUserForm implements OnInit {
     birthday: Date;
     address: { zip: number; city: string };
   }>();
+
   public userForm: FormGroup;
 
   constructor(private formBuilder: FormBuilder) {}
 
   private initForm(): void {
     this.userForm = this.formBuilder.group({
-      email: ["", [Validators.required]],
-      name: ["", [Validators.required]],
-      birthday: ["", [Validators.required]],
+      // you can also use pattern and a regular expression
+      email: ["", [Validators.required, Validators.email]],
+      name: ["", [Validators.required, Validators.max(128)]],
+      birthday: ["", [dateValidator()]],
       zip: ["", [Validators.required]],
-      city: ["", [Validators.required]],
+      city: ["", [Validators.required, Validators.pattern("[a-zA-Z ]*")]],
     });
+  }
+
+  private dateValidator(control: FormControl): ValidatorFn {
+    const todayDate = new Date().getTime();
+    return control.value.getTime() > todayDate
+      ? { error: "Invalid date!" }
+      : null;
   }
 
   doSubmit(): void {
     this.event.emit({
       email: this.userForm.get("email").value,
-      email: this.userForm.get("name").value,
-      email: this.userForm.get("birthday").value,
-      email: this.userForm.get("zip").value,
-      email: this.userForm.get("city").value,
+      name: this.userForm.get("name").value,
+      birthday: this.userForm.get("birthday").value,
+      address: {
+        zip: this.userForm.get("zip").value,
+        city: this.userForm.get("city").value,
+      },
     });
   }
 
@@ -283,7 +303,7 @@ Complete the aggregation so that it sends user emails by role ({\_id: 'role', us
 db.collections('users').aggregate({
     $group: {
       _id: "role",
-      users:
+      users: // not sure about this one I would have to test it
     }
   });
 ```
