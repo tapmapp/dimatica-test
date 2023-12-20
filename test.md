@@ -105,37 +105,40 @@ export class UserService {
     <input
       type="text"
       [(ngModel)]="query"
-      (ngModelChange)="querySubject.next($event)"
+      (ngModelChange)="inputChange($event)"
     />
     <div *ngFor="let user of users">
       {{ user.email }}
     </div>
   `,
 })
-export class AppUsers implements OnInit {
-  query = "";
-  querySubject = new Subject<string>();
+export class AppUsers {
 
-  users: { email: string }[] = [];
+    query = '';
+    querySubject = new Subject<string>();
+    users: User[] = [];
 
-  constructor(private userService: UserService) {}
+    timer: NodeJS.Timeout;
 
-  ngOnInit(): void {
-        concat(of(this.query), this.querySubject.asObservable())
-      .pipe(
-        concatMap((q) =>
-          timer(0, 60000).pipe(concatMap(async () => await this.findUsers(q)))
-        )
-      )
-      .subscribe({
-        next: (res) => (this.users = res),
-      });
-  }
+    constructor(private userService: UserService) {}
+
+    public inputChange(event: string): void {
+        if (this.timer) clearTimeout(this.timer);
+        this.timer = setTimeout(async () => {
+            await this.findUsers(event);
+        }, 3000);
+        // this.users = await this.findUsers(event);
+    }
+
+    private async findUsers(query: string): Promise<void> {
+        this.users = await firstValueFrom(this.userService.findUsers(query));
+    }
 }
 
 
 Pipe expects an OperatorFunction, not a service, you need to wrap it into a method that returns an OperatorFunction to make it work.
 Also, if you are planning to make a request you need to use async await
+Not sure what you are trying to do, but the logic seems quite complex for a input and if what you are trying to do is to query an API when the input change, I would do something like the code above.
 
 ```
 
@@ -208,7 +211,7 @@ export class AppUserForm implements OnInit {
 
   private initForm(): void {
     this.userForm = this.formBuilder.group({
-      // you can also use pattern and a regular expression
+      // you can also use pattern and a regular expression to validate the email
       email: ["", [Validators.required, Validators.email]],
       name: ["", [Validators.required, Validators.max(128)]],
       birthday: ["", [dateValidator()]],
@@ -219,9 +222,9 @@ export class AppUserForm implements OnInit {
 
   private dateValidator(control: FormControl): ValidatorFn {
     const todayDate = new Date().getTime();
-    return control.value.getTime() > todayDate
-      ? { error: "Invalid date!" }
-      : null;
+    if (new Date(control.value).getTime() > todayDate)
+      return { error: "Invalid date!" };
+    return null;
   }
 
   doSubmit(): void {
